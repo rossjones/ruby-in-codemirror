@@ -1,0 +1,135 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <script src="codemirror/js/codemirror.js" type="text/javascript"></script>
+    <title>CodeMirror: Ruby demonstration</title>
+    <style type="text/css">
+      .CodeMirror-line-numbers {
+        width: 2.2em;
+        color: #999;
+        background-color: #333;
+        text-align: right;
+        padding: .4em;
+        margin: 0;
+        font-size: 12pt;
+        line-height: 1.1em;
+        font-family: consolas, monospace;
+      }
+    </style>
+</head>
+<body>
+
+<h1>CodeMirror Ruby highligting 0.1</h1>
+
+<ul>
+<li>author: <a href="mailto:michal@hantl.cz">michal@hantl.cz</a></li>
+<li>TODO: %w{stuff like} HEREDOC, variables, indentation ... </li>
+<li>version : 0.1a</li>
+</ul>
+
+<div style="border: 1px solid black; padding: 0px;">
+<textarea id="code" cols="100" rows="40" style="width:100%">
+class DinersController < UsersController
+
+  # GET /diners
+  # GET /diners.xml
+  def index
+    @diners = Diner.all
+
+    respond_to do |format|
+      format.html # index.html.erb
+      format.xml  { render :xml => @diners }
+    end
+  end
+
+
+  # GET /diners/1
+  # GET /diners/1.xml
+  def show
+    @diner = Diner.find(params[:id])
+
+    respond_to do |format|
+      format.html # show.html.erb
+      format.xml  { render :xml => @diner }
+    end
+  end
+
+  # GET /diners/new
+  # GET /diners/new.xml
+  def new
+    @diner = Diner.new
+
+    respond_to do |format|
+      format.html # new.html.erb
+      format.xml  { render :xml => @diner }
+    end
+  end
+
+  # GET /diners/1/edit
+  def edit
+    @diner = Diner.find(params[:id])
+  end
+
+  # POST /diners
+  # POST /diners.xml
+  def create
+    @diner = Diner.new(params[:diner])
+
+    respond_to do |format|
+      if @diner.save
+        flash[:notice] = 'Diner was successfully created.'
+        format.html { redirect_to(@diner) }
+        format.xml  { render :xml => @diner, :status => :created, :location => @diner }
+      else
+        format.html { render :action => "new" }
+        format.xml  { render :xml => @diner.errors, :status => :unprocessable_entity }
+      end
+    end
+  end
+
+  # PUT /diners/1
+  # PUT /diners/1.xml
+  def update
+    @diner = Diner.find(params[:id])
+
+    respond_to do |format|
+      if @diner.update_attributes(params[:diner])
+        flash[:notice] = 'Diner was successfully updated.'
+        format.html { redirect_to(@diner) }
+        format.xml  { head :ok }
+      else
+        format.html { render :action => "edit" }
+        format.xml  { render :xml => @diner.errors, :status => :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /diners/1
+  # DELETE /diners/1.xml
+  def destroy
+    @diner = Diner.find(params[:id])
+    @diner.destroy
+
+    respond_to do |format|
+      format.html { redirect_to(diners_url) }
+      format.xml  { head :ok }
+    end
+  end
+end
+
+</textarea>
+</div>
+
+<script type="text/javascript">
+    var editor = CodeMirror.fromTextArea('code', {
+        parserfile: ["../../js/parseruby.js"],
+        stylesheet: "css/pythoncolors.css",
+        path: "codemirror/js/",
+        lineNumbers: true,
+        textWrapping: false,
+        indentUnit: 4,
+        parserConfig: {},
+        height: '80%'
+    });
+</script>
+</body>
+</html>
