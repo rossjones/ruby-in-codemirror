@@ -199,7 +199,7 @@ var RubyParser = Editor.Parser = (function() {
 
                 
             if (identifierStarters.test(ch)) {
-                source.nextWhile(matcher(/[A-Za-z?!]/));
+                source.nextWhile(matcher(/[A-Za-z_?!]/));
                 word = source.get();
                 //type = 'rb-identifier';
                 type = INSTANCEMETHODCALLCLASS;
