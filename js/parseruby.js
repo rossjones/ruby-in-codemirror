@@ -36,6 +36,25 @@ var RubyParser = Editor.Parser = (function() {
     
     var tokenizeRuby = (function() {
 
+        function inSpecialEndedString(style, endchar) {
+          return function(source, setState) {
+              var stringDelim, threeStr, temp, type, word, possible = {};
+              while (!source.endOfLine()) {
+                  var ch = source.next();
+                  // Skip escaped characters
+                  if (ch == '\\') {
+                    ch = source.next();
+                    ch = source.next();
+                  }
+                  if (ch == endchar) {
+                   setState(normal);
+                   break;
+                  }
+                }
+                return style;
+            }          
+        }
+        
         function inSingleQuotedString(style) {
           return function(source, setState) {
               var stringDelim, threeStr, temp, type, word, possible = {};
@@ -124,19 +143,36 @@ var RubyParser = Editor.Parser = (function() {
             }
             
 
-            if (ch == ':') {
-                type = SYMBOLCLASS;
-                source.nextWhile(matcher(/[\w\d]/));
-                word = source.get();
-                return {content:word, style:type};
+            if (ch == '%') {
+                type = STRINGCLASS;
+                var peek = source.peek();
+                if (peek == 'w' || peek == 'W') {
+                  setState(inSpecialEndedString(STRINGCLASS, '}'));
+                  return null;
+                }
+                if (peek == 'q' || peek == 'Q') {
+                  source.next();
+                  var ending = source.next();
+                  if (ending == '(') ending = ')';
+                  if (ending == '{') ending = '}';                  
+                  setState(inSpecialEndedString(STRINGCLASS, ending));
+                  return {content:source.get(), style:STRINGCLASS}; 
+                }
+                setState(inSpecialEndedString(STRINGCLASS, source.peek()));
+                source.next();
+                return {content:source.get(), style:STRINGCLASS}; 
             }
 
             if (ch == '\'') {
                 setState(inSingleQuotedString(STRINGCLASS));
                 return null;
+            }            
+            
+            if (ch == '\"') {
+                setState(inDoubleQuotedString(STRINGCLASS));
+                return null;
             }
-            
-            
+
             if (ch == '\"') {
                 setState(inDoubleQuotedString(STRINGCLASS));
                 return null;
@@ -163,7 +199,7 @@ var RubyParser = Editor.Parser = (function() {
 
                 
             if (identifierStarters.test(ch)) {
-                source.nextWhile(matcher(/[^\.\s]/));
+                source.nextWhile(matcher(/[A-Za-z?!]/));
                 word = source.get();
                 //type = 'rb-identifier';
                 type = INSTANCEMETHODCALLCLASS;

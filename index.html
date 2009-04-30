@@ -39,6 +39,11 @@ class DinersController < UsersController::SomeOther::NameSpace
 =end  
 
 
+  def test_classes
+    ClassName
+    CONSTANT_NAME
+    test(InsideBraces)
+  end
 
   # GET /diners
   def index
@@ -64,11 +69,26 @@ class DinersController < UsersController::SomeOther::NameSpace
   
   def string
     'single'
+    123
     "double"
+    123
     "and #{ with(:ruby).inside }"
-    
+    123
+    "this \"is\" a string expression\n"
+    123
+    "concat#{foobar}"
+    123
+    'concat#{foobar}'
+    123
     %w{words into array}
+    123
     %W{words into array}
+    123
+    %q!I said, "You said, 'She said it.'"!
+    123
+    %!I said, "You said, 'She said it.'"!
+    123
+    %Q('This is it.'\n)
   end
   
   def heredoc
