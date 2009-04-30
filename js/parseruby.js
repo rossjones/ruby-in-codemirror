@@ -14,10 +14,15 @@ var RubyParser = Editor.Parser = (function() {
     var INSTANCEMETHODCALLCLASS = 'rb-method'
     var VARIABLECLASS = 'rb-variable';
     var STRINGCLASS = 'rb-string';
-    
+    var FIXNUMSTYLE =  'rb-fixnum rb-numeric';
+    var METHODCALLCLASS = 'rb-method-call';
+    var HEREDOCCLASS = 'rb-heredoc';
+    var WRONGCLASS = 'rb-parse-error';
+    var BLOCKCOMMENT = 'rb-block-comment';
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
+    var numberStarters = /[0-9]/;
     var keywords = wordRegexp(['begin', 'class', 'ensure', 'nil', 'self', 'when', 'end', 'def', 'false', 'not', 'super', 'while', 'alias', 'defined', 'for', 'or', 'then', 'yield', 'and', 'do', 'if', 'redo', 'true', 'begin', 'else', 'in', 'rescue', 'undef', 'break', 'elsif', 'module', 'retry', 'unless', 'case', 'end', 'next', 'return', 'until']);
     var py, keywords, types, stringStarters, stringTypes, config;
 
@@ -49,6 +54,24 @@ var RubyParser = Editor.Parser = (function() {
                 return style;
             }          
         }
+        
+        function inHereDoc(style, keyword) {
+          return function(source, setState) {
+              var st = '';
+              while (!source.endOfLine()) {
+                var ch = source.next();
+                if (ch == keyword[keyword.length-1]) {
+                  st += source.get();
+                  if (st.substr(st.length - keyword.length, keyword.length) == keyword) {
+                    setState(normal);
+                    return {content:st, style:style};
+                  }
+                }
+              }
+              return style;
+            }          
+        }
+        
         
         function inDoubleQuotedString(style) {
           return function(source, setState) {
@@ -94,9 +117,12 @@ var RubyParser = Editor.Parser = (function() {
             }
             
             
-            /*if (ch == '=') {
-                return OPCLASS;
-            }*/
+            if (numberStarters.test(ch)) {
+                source.nextWhile(matcher(/[0-9]/));
+                word = source.get();
+                return {content:word, style:FIXNUMSTYLE};
+            }
+            
 
             if (ch == ':') {
                 type = SYMBOLCLASS;
@@ -120,11 +146,24 @@ var RubyParser = Editor.Parser = (function() {
             if (ch == '.') {
               source.nextWhile(matcher(/[\w\d]/));
               word = source.get();
-              return {content:word, style:'rb-method-call'};
+              return {content:word, style:METHODCALLCLASS};
             }
+            
+            if (ch == '<') {
+              if (source.peek() == '<') {
+                source.next();
+                if (identifierStarters.test(source.peek())) {
+                  source.nextWhile(matcher(/[\w\d]/));
+                  var keyword = source.get();
+                  setState(inHereDoc(HEREDOCCLASS, keyword.substr(2, keyword.length-2)));
+                  return {content:keyword, style:HEREDOCCLASS};
+                }
+              }
+            }
+
                 
             if (identifierStarters.test(ch)) {
-                source.nextWhile(matcher(/[\w\d]/));
+                source.nextWhile(matcher(/[^\.\s]/));
                 word = source.get();
                 //type = 'rb-identifier';
                 type = INSTANCEMETHODCALLCLASS;
@@ -140,6 +179,14 @@ var RubyParser = Editor.Parser = (function() {
 
                 if (ch.toUpperCase() == ch) {
                     type = CONSTCLASS;
+                    while (source.peek() == ':') {
+                        source.next();
+                        if (source.peek() == ':') {
+                            source.next();
+                            source.nextWhile(matcher(/[\w\d]/));
+                        }
+                    }
+                    word += source.get();
                 }
                 
                 if (false && type == INSTANCEMETHODCALLCLASS) {

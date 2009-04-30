@@ -28,10 +28,19 @@
 
 <div style="border: 1px solid black; padding: 0px;">
 <textarea id="code" cols="100" rows="40" style="width:100%">
-class DinersController < UsersController
+class DinersController < UsersController::SomeOther::NameSpace
+
+=begin
+  long, entertaining comment
+
+  =begin
+    just checking
+  =end
+=end  
+
+
 
   # GET /diners
-  # GET /diners.xml
   def index
     @diners = Diner.all
 
@@ -41,79 +50,69 @@ class DinersController < UsersController
     end
   end
 
-
-  # GET /diners/1
-  # GET /diners/1.xml
-  def show
-    @diner = Diner.find(params[:id])
-
-    respond_to do |format|
-      format.html # show.html.erb
-      format.xml  { render :xml => @diner }
+  def highlights_question_marks?
+    exclamation_marks_too!??
+  end
+  
+  def operators
+    array = []
+    array << 'item'
+    "hello " += 'world'
+    128 -= 4
+    128 *= 2
+  end
+  
+  def string
+    'single'
+    "double"
+    "and #{ with(:ruby).inside }"
+    
+    %w{words into array}
+    %W{words into array}
+  end
+  
+  def heredoc
+    <<EOF
+    The price is #{$Price}.
+    EOF
+  
+    # those are not supported for now
+  
+    "EOF";			# same as above
+    The price is #{$Price}.
+    EOF
+  
+    print <<`EOC`			# execute commands
+    echo hi there
+    echo lo there
+    EOC
+  
+    print <<"foo", <<"bar"	# you can stack them
+    I said foo.
+    foo
+    I said bar.
+    bar
+  
+    myfunc(<<"THIS", 23, <<'THAT')
+    Here's a line
+    or two.
+    THIS
+    and here's another.
+    THAT
+  
+    if need_define_foo
+      eval <<-EOS			# delimiters can be indented
+        def foo
+         print "foo\n"
+        end
+      EOS
     end
   end
 
-  # GET /diners/new
-  # GET /diners/new.xml
-  def new
-    @diner = Diner.new
+  MY_CONSTANT = 0
 
-    respond_to do |format|
-      format.html # new.html.erb
-      format.xml  { render :xml => @diner }
-    end
-  end
 
-  # GET /diners/1/edit
-  def edit
-    @diner = Diner.find(params[:id])
-  end
 
-  # POST /diners
-  # POST /diners.xml
-  def create
-    @diner = Diner.new(params[:diner])
-
-    respond_to do |format|
-      if @diner.save
-        flash[:notice] = 'Diner was successfully created.'
-        format.html { redirect_to(@diner) }
-        format.xml  { render :xml => @diner, :status => :created, :location => @diner }
-      else
-        format.html { render :action => "new" }
-        format.xml  { render :xml => @diner.errors, :status => :unprocessable_entity }
-      end
-    end
-  end
-
-  # PUT /diners/1
-  # PUT /diners/1.xml
-  def update
-    @diner = Diner.find(params[:id])
-
-    respond_to do |format|
-      if @diner.update_attributes(params[:diner])
-        flash[:notice] = 'Diner was successfully updated.'
-        format.html { redirect_to(@diner) }
-        format.xml  { head :ok }
-      else
-        format.html { render :action => "edit" }
-        format.xml  { render :xml => @diner.errors, :status => :unprocessable_entity }
-      end
-    end
-  end
-
-  # DELETE /diners/1
-  # DELETE /diners/1.xml
-  def destroy
-    @diner = Diner.find(params[:id])
-    @diner.destroy
-
-    respond_to do |format|
-      format.html { redirect_to(diners_url) }
-      format.xml  { head :ok }
-    end
-  end
 end
 
 </textarea>
@@ -122,7 +121,7 @@ end
 <script type="text/javascript">
     var editor = CodeMirror.fromTextArea('code', {
         parserfile: ["../../js/parseruby.js"],
-        stylesheet: "css/pythoncolors.css",
+        stylesheet: "css/rubycolors.css",
         path: "codemirror/js/",
         lineNumbers: true,
         textWrapping: false,
