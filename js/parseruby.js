@@ -188,10 +188,13 @@ var RubyParser = Editor.Parser = (function() {
             if (ch == '<') {
               if (source.peek() == '<') {
                 source.next();
+                if (source.peek() == '-') {
+                  source.next();
+                }
                 if (identifierStarters.test(source.peek())) {
                   source.nextWhile(matcher(/[\w\d]/));
                   var keyword = source.get();
-                  setState(inHereDoc(HEREDOCCLASS, keyword.substr(2, keyword.length-2)));
+                  setState(inHereDoc(HEREDOCCLASS, keyword.match(/\w+/)[0]));
                   return {content:keyword, style:HEREDOCCLASS};
                 }
               }
