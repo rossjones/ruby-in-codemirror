@@ -29,6 +29,8 @@
 <textarea id="code" cols="100" rows="40" style="width:100%">
 class DinersController < UsersController::SomeOther::NameSpace
 
+# comments 
+
 =begin
   long, entertaining comment
 
@@ -88,6 +90,22 @@ class DinersController < UsersController::SomeOther::NameSpace
     %!I said, "You said, 'She said it.'"!
     123
     %Q('This is it.'\n)
+  end
+  
+  def number_literals
+    123       #integer
+    -123      #integer(signed)
+    1_234     #integer(underscore within decimal numbers ignored)
+    123.45    #floating point number
+    1.2e-3    #floating point number
+    0xffff    #hexadecimal integer
+    0b01011   #binary integer
+    0377      #octal integer
+    ?a        #ASCII code for character `a'(97)
+    ?\C-a     #Control-a(1)
+    ?\M-a     #Meta-a(225)
+    ?\M-\C-a  #Meta-Control-a(129)
+    :symbol   #Integer corresponding identifiers, variable names, and operators.
   end
   
   def heredoc

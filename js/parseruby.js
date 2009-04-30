@@ -14,11 +14,14 @@ var RubyParser = Editor.Parser = (function() {
     var INSTANCEMETHODCALLCLASS = 'rb-method'
     var VARIABLECLASS = 'rb-variable';
     var STRINGCLASS = 'rb-string';
-    var FIXNUMSTYLE =  'rb-fixnum rb-numeric';
+    var FIXNUMCLASS =  'rb-fixnum rb-numeric';
     var METHODCALLCLASS = 'rb-method-call';
     var HEREDOCCLASS = 'rb-heredoc';
     var WRONGCLASS = 'rb-parse-error';
     var BLOCKCOMMENT = 'rb-block-comment';
+    var FLOATCLASS = 'rb-float';
+    var HEXNUMCLASS = 'rb-hexnum';
+    var BINARYCLASS = 'rb-binary';
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
@@ -123,6 +126,12 @@ var RubyParser = Editor.Parser = (function() {
                 return COMMENTCLASS;
             }
 
+            if (ch == ':') {
+                type = SYMBOLCLASS;
+                source.nextWhile(matcher(/[\w\d]/));
+                word = source.get();
+                return {content:word, style:type};
+            }
 
             if (ch == '@') {
                 type = 'rb-instance-var';
@@ -136,10 +145,40 @@ var RubyParser = Editor.Parser = (function() {
             }
             
             
-            if (numberStarters.test(ch)) {
-                source.nextWhile(matcher(/[0-9]/));
+            if (numberStarters.test(ch) ||
+                  ( ch == '-' && numberStarters.test(source.peek()) )
+              ) {
+                var type = FIXNUMCLASS;
+                source.nextWhile(matcher(/[0-9_]/));
                 word = source.get();
-                return {content:word, style:FIXNUMSTYLE};
+                if (source.peek() == 'x') {
+                  source.next()
+                  source.nextWhile(matcher(/[a-f0-9]/));
+                  word += source.get();
+                  return {content:word, style:HEXNUMCLASS};
+                }
+                if (source.peek() == 'b') {
+                  source.next()
+                  source.nextWhile(matcher(/[01]/));
+                  word += source.get();
+                  return {content:word, style:BINARYCLASS};
+                }
+                if (source.peek() == '.') {
+                  source.next()
+                  type = FLOATCLASS;
+                  source.nextWhile(matcher(/[0-9_]/));
+                  word += source.get();
+                }
+                if (source.peek() == 'e') {
+                  source.next();
+                  if (source.peek() == '-') {
+                    source.next();
+                  }
+                  type = FLOATCLASS;
+                  source.nextWhile(matcher(/[0-9_]/));
+                  word += source.get();
+                }
+                return {content:word, style:type};
             }
             
 
