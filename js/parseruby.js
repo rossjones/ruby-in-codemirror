@@ -17,11 +17,12 @@ var RubyParser = Editor.Parser = (function() {
     var FIXNUMCLASS =  'rb-fixnum rb-numeric';
     var METHODCALLCLASS = 'rb-method-call';
     var HEREDOCCLASS = 'rb-heredoc';
-    var WRONGCLASS = 'rb-parse-error';
+    var ERRORCLASS = 'rb-parse-error';
     var BLOCKCOMMENT = 'rb-block-comment';
     var FLOATCLASS = 'rb-float';
     var HEXNUMCLASS = 'rb-hexnum';
     var BINARYCLASS = 'rb-binary';
+    var ASCIICODE = 'rb-ascii'
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
@@ -223,11 +224,23 @@ var RubyParser = Editor.Parser = (function() {
               word = source.get();
               return {content:word, style:METHODCALLCLASS};
             }
+
+            if (ch == '?') {
+              var peek = source.peek();
+              if (peek == '\\') {
+                source.next();
+                source.nextWhile(matcher(/[A-Za-z\\-]/));
+                return {content:source.get(), style:ASCIICODE};
+              } else {
+                source.next();
+                return {content:source.get(), style:ASCIICODE};
+              }
+            }
             
             if (ch == '<') {
               if (source.peek() == '<') {
                 source.next();
-                if (source.peek() == '-') {
+                if (source.peek() == '-' || source.peek() == '`') {
                   source.next();
                 }
                 if (identifierStarters.test(source.peek())) {
