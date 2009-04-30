@@ -1,0 +1,20 @@
+NAME
+    Ruby-in-CodeMirror
+
+DESCRIPTION
+
+    This is a parser implementing Ruby syntax highlight for the excellent
+    JavaScript-based source code editor CodeMirror.
+
+    CodeMirror: http://marijn.haverbeke.nl/codemirror/
+
+DEMO
+
+    Ruby syntax highlight demo: http://stuff.hantl.cz/ruby-in-codemirror/
+
+AUTHOR
+
+    Michal Hantl, http://michal.hantl.cz
+
+
+COPYRIGHT AND LICENSE
