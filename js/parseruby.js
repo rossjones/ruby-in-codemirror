@@ -63,8 +63,6 @@ var RubyParser = Editor.Parser = (function() {
     
     var operatorProgress = buildProgress(operators);
     
-    console.log(operatorProgress);
-    
     var py, keywords, types, stringStarters, stringTypes, config;
 
 
@@ -409,7 +407,6 @@ var RubyParser = Editor.Parser = (function() {
 
                 // in development
                 if (false && type == INSTANCEMETHODCALLCLASS) {
-                  console.log(word);
                   var char = null;
                   pushback = '';
                   while(!source.endOfLine()) {
