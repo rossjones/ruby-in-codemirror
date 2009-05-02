@@ -23,6 +23,7 @@ var RubyParser = Editor.Parser = (function() {
     var HEXNUMCLASS = 'rb-hexnum';
     var BINARYCLASS = 'rb-binary';
     var ASCIICODE = 'rb-ascii'
+    var LONGCOMMENTCLASS = 'rb-long-comment';
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
@@ -132,6 +133,15 @@ var RubyParser = Editor.Parser = (function() {
                 source.nextWhile(matcher(/[\w\d]/));
                 word = source.get();
                 return {content:word, style:type};
+            }
+
+            if (ch == '=') {
+              var peek = source.peek();
+              if (peek == 'b' || peek == 'e') {
+                source.nextWhile(matcher(/[\w\d]/));
+                word = source.get();
+                return {content:word, style:LONGCOMMENTCLASS};
+              }
             }
 
             if (ch == '@') {
@@ -350,6 +360,8 @@ var RubyParser = Editor.Parser = (function() {
                 }
             }
         }
+        
+        var inLongComment = false;
 
         var iter = {
             next: function() {
@@ -357,6 +369,17 @@ var RubyParser = Editor.Parser = (function() {
                 var type = token.style;
                 var content = token.content;
                 //console.log(token);
+                if (lastToken && lastToken.content == "\n") {
+                  if (token.content == '=begin') {
+                    inLongComment = true;
+                  }
+                  if (token.content == '=end') {
+                    inLongComment = false;
+                  }
+                }                
+                if (inLongComment) {
+                  token.style = LONGCOMMENTCLASS;
+                }                
 
                 lastToken = token;
                 return token;

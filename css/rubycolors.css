@@ -34,7 +34,7 @@ width:75px;
 padding-bottom:0.1em;
 padding-top:0.2em;
 }
-.editbox .rb-comment {
+.editbox .rb-comment, .editbox .rb-long-comment {
   color:#AEAEAE;
   font-style:italic;
 }
