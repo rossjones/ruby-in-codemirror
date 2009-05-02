@@ -28,6 +28,7 @@ var RubyParser = Editor.Parser = (function() {
     var KEWORDCLASS = 'rb-keyword';
     var REGEXPCLASS = 'rb-regexp'
     var GLOBALVARCLASS = 'rb-global-variable'
+    var EXECCLASS = 'rb-exec'
     
     
     var identifierStarters = /[_A-Za-z]/;    
@@ -260,13 +261,19 @@ var RubyParser = Editor.Parser = (function() {
             }
 
             if (ch == '\'') {
-                pushState(inStaticString(STRINGCLASS, '\''), setState); 
-                return null;
+              pushState(inStaticString(STRINGCLASS, '\''), setState); 
+              return null;
+            }
+
+            if (ch == '`') {
+              pushState(inRubyInsertableString(EXECCLASS, '`'), setState); 
+              return null;
             }
             
+            
             if (ch == '/') {
-                pushState(inStaticString(REGEXPCLASS, '/'), setState); 
-                return null;
+              pushState(inStaticString(REGEXPCLASS, '/'), setState); 
+              return null;
             }
             
             if (ch == '\"') {
