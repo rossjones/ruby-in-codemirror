@@ -126,8 +126,15 @@ var RubyParser = Editor.Parser = (function() {
         
         function inRubyInsertableStringNormal(style) {
           var originalState = ancestorState();
+          var waitingForBraces = 1;
           return function(source, setState) {
             if (source.peek() == '}') {
+              waitingForBraces -= 1;
+            }            
+            if (source.peek() == '{') {
+              waitingForBraces += 1;
+            }            
+            if (waitingForBraces == 0) {
               source.next();
               popState(setState);
               return style;

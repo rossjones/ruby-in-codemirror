@@ -33,21 +33,21 @@
     :operators,
     :variables_vs_method_calls
     :indentation,
-  }
+  ]
 
   NICE_TO_HAVE = [
     :current_line_highlight,
     :simple_markup__in_long_comments,
     :syntax_errors_highlight,
     :better_HEREDOC
-  }
+  ]
   
 class DinersController < UsersController::SomeOther::NameSpace
 
     __FILE__
     ANOTHER_CONSTANT
     
-    acts_as_editor_ruby_editor :version => '1.8'
+    acts_as_ruby_editor :version => '1.8'
     
     # long comment
 
@@ -105,6 +105,7 @@ class DinersController < UsersController::SomeOther::NameSpace
     "this \"is\" a string expression\n"   #double quotes
     "string #{ with(:ruby).inside }"      #double quotes with ruby
     'concat#{foobar}'                     #no ruby here
+    "here are some random numbers #{(0..10).collect {(100*rand).to_i}.sort.inspect}"
   end
   
   def special_string
