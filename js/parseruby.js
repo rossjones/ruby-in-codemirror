@@ -56,10 +56,12 @@ var RubyParser = Editor.Parser = (function() {
     var boolOperators = ['>=', '<=', '==', '===', '=~', '!=', '<>', '!', '?', ':'];
     var mathOperators = ['/', '*', '+', '-']
     var structureOperators = ['=>'];
+    var rangeOperators = ['..', '...'];
     var operators = changeOperators.
                       concat(boolOperators).
                       concat(mathOperators).
-                      concat(structureOperators);
+                      concat(structureOperators).
+                      concat(rangeOperators);
     
     var operatorProgress = buildProgress(operators);
     
@@ -325,10 +327,7 @@ var RubyParser = Editor.Parser = (function() {
 
 
             if (ch == '.') {
-              if (source.peek() == '.') {
-                source.next();
-                return OPCLASS;
-              } else {
+              if (source.peek() != '.') {
                 source.nextWhile(matcher(/[\w\d]/));
                 word = source.get();
                 return {content:word, style:METHODCALLCLASS};

@@ -97,7 +97,8 @@ class DinersController < UsersController::SomeOther::NameSpace
     "hello " += 'world'
     128 -= 4
     128 *= 2
-    128..256
+    15..15      #.to_a == [12, 13, 14, 15]
+    12...15     #.to_a == [12, 13, 14]
     'a'..'z'
   end
   
