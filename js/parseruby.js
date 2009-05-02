@@ -97,8 +97,37 @@ var RubyParser = Editor.Parser = (function() {
             }          
         }
         
+        /* state nesting */
+        var stateStack = [normal];
+        function pushState(state, setState) {
+          stateStack.push(state);
+          setState(state);
+        }
+
+        function popState(setState) {
+          stateStack.pop();
+          setState(topState());
+        }
+
+        function topState() {
+          return stateStack[stateStack.length-1];
+        }        
+
+        function ancestorState(level) {
+          level = level ? level : '1'
+          return stateStack[stateStack.length-1-level];
+        }        
+
+        function inRubyInsertableString(style, ending_char) {
+          return inString(style, ending_char, true);
+        }
+
+        function inStaticString(style, ending_char) {
+          return inString(style, ending_char, false);
+        }
         
-        function inDoubleQuotedString(style) {
+
+        function inString(style, ending_char, ruby_insertable) {
           return function(source, setState) {
               var stringDelim, threeStr, temp, type, word, possible = {};
               while (!source.endOfLine()) {
@@ -108,14 +137,46 @@ var RubyParser = Editor.Parser = (function() {
                     ch = source.next();
                     ch = source.next();
                   }
-                  if (ch == '\"') {
-                   setState(normal);
+                  if (ch == ending_char) {
+                   popState(setState);
                    break;
+                  }
+                  if (ch == '#' && source.peek() == '{') {
+                   source.next();
+                   if (ruby_insertable) {
+                     pushState(inRubyInsertableStringNormal(style), setState);
+                   } else {
+                     pushState(inIgnoredBracesString(style), setState);
+                   }
+                   return style;
                   }
                 }
                 return style;
             }          
-        }        
+        }
+        
+        function inRubyInsertableStringNormal(style) {
+          var originalState = ancestorState();
+          return function(source, setState) {
+            if (source.peek() == '}') {
+              source.next();
+              popState(setState);
+              return style;
+            } else {
+              return originalState(source, setState);
+            }
+          }          
+        }            
+
+        function inIgnoredBracesString(style) {
+          return function(source, setState) {
+            var ch = source.next();
+            if (ch == '}') {
+              popState(setState);
+            }
+            return style;
+          }          
+        }            
         
         function normal(source, setState) {
             var stringDelim, threeStr, temp, type, word, possible = {};
@@ -197,19 +258,24 @@ var RubyParser = Editor.Parser = (function() {
             if (ch == '%') {
                 type = STRINGCLASS;
                 var peek = source.peek();
-                if (peek == 'w' || peek == 'W') {
-                  setState(inSpecialEndedString(STRINGCLASS, '}'));
+                if (peek == 'w') {
+                  pushState(inStaticString(STRINGCLASS, '}'), setState);                  
                   return null;
                 }
+                if (peek == 'W') {
+                  pushState(inRubyInsertableString(STRINGCLASS, '}'), setState);
+                  return null;
+                }                
+                
                 if (peek == 'q' || peek == 'Q') {
                   source.next();
                   var ending = source.next();
                   if (ending == '(') ending = ')';
                   if (ending == '{') ending = '}';                  
-                  setState(inSpecialEndedString(STRINGCLASS, ending));
+                  pushState(inString(STRINGCLASS, ending, peek == 'Q'), setState);
                   return {content:source.get(), style:STRINGCLASS}; 
                 }
-                setState(inSpecialEndedString(STRINGCLASS, source.peek()));
+                pushState(inRubyInsertableString(STRINGCLASS, source.peek()), setState);
                 source.next();
                 return {content:source.get(), style:STRINGCLASS}; 
             }
@@ -220,15 +286,10 @@ var RubyParser = Editor.Parser = (function() {
             }            
             
             if (ch == '\"') {
-                setState(inDoubleQuotedString(STRINGCLASS));
+                pushState(inRubyInsertableString(STRINGCLASS, "\""), setState);
                 return null;
             }
 
-            if (ch == '\"') {
-                setState(inDoubleQuotedString(STRINGCLASS));
-                return null;
-            }
-          
 
             if (ch == '.') {
               source.nextWhile(matcher(/[\w\d]/));
