@@ -28,17 +28,21 @@
 <div style="border: 1px solid black; padding: 0px;">
 <textarea id="code" cols="100" rows="40" style="width:100%">
 
-  TODO = [
-    :variables_vs_method_calls
-    :blocks_and_params
-    :indentation,
-  ]
+  ROADMAP = [
+    '0.2 milestone' => [
+        :variables_vs_method_calls
+        :blocks_and_params 
+        :indentation,
+      ]
+    '0.3 milestone' => [
+        :mark_some_syntax_errors
+        :simple_markup_in_long_comments,
+      ]
+    ]
 
   NICE_TO_HAVE = [
     :current_line_highlight,
-    :simple_markup__in_long_comments,
-    :syntax_errors_highlight,
-    :better_HEREDOC
+    :better_HEREDOC # not sure, netbeans doesnt support complex heredoc either
   ]
   
 class DinersController < UsersController::SomeOther::NameSpace
