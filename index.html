@@ -27,6 +27,24 @@
 
 <div style="border: 1px solid black; padding: 0px;">
 <textarea id="code" cols="100" rows="40" style="width:100%">
+
+  TODO = [
+    :upcase_constants,
+    :long_comments,
+    :operators,
+    :global_variables,
+    :variables_vs_method_calls
+    :indentation,
+    :better_HEREDOC
+  }
+
+  NICE_TO_HAVE = [
+    :current_line_highlight,
+    :simple_markup__in_long_comments,
+    :syntax_errors_highlight,
+  }
+  
+
 class DinersController < UsersController::SomeOther::NameSpace
 
 # comments 
@@ -38,7 +56,6 @@ class DinersController < UsersController::SomeOther::NameSpace
     just checking
   =end
 =end  
-
 
   def test_classes
     ClassName
@@ -69,27 +86,23 @@ class DinersController < UsersController::SomeOther::NameSpace
   end
   
   def string
-    'single'
-    123
-    "double"
-    123
-    "and #{ with(:ruby).inside }"
-    123
-    "this \"is\" a string expression\n"
-    123
-    "concat#{foobar}"
-    123
-    'concat#{foobar}'
-    123
-    %w{words into array}
-    123
-    %W{words into array}
-    123
-    %q!I said, "You said, 'She said it.'"!
-    123
-    %!I said, "You said, 'She said it.'"!
-    123
-    %Q('This is it.'\n)
+    'type \'h\' for help'                 #single quotes
+    "this \"is\" a string expression\n"   #double quotes
+    "string #{ with(:ruby).inside }"      #double quotes with ruby
+    'concat#{foobar}'                     #no ruby here
+  end
+  
+  def special_string
+    %w{apple pear cherry}                           #array of words
+    %W{apple pear cherry}                           #array of words
+    %w{apple #{ 123 } cherry}                       #array of words
+    %W{apple #{ 123 } cherry}                       #array of words
+    %q!I said, "You said, 'She said it.'"!          #q
+    %q!I said, "You said, 'She said #{123}.'"!      #q
+    %Q('This is it.'\n)                             # big Q
+    %Q('This is #{ 123 }.'\n)                       # big Q
+    %!I said, "You said, 'She said it.'"!           #custom char
+    %!I said, "You said, 'She said #{ 123 }.'"!     #custom char
   end
   
   def number_literals
@@ -137,18 +150,12 @@ class DinersController < UsersController::SomeOther::NameSpace
     and here's another.
     THAT
   
-    if need_define_foo
-      eval <<-EOS			# delimiters can be indented
-        def foo
-         print "foo\n"
-        end
-      EOS
-    end
+    eval <<-EOS			# delimiters can be indented
+      def foo
+       print "foo\n"
+      end
+    EOS
   end
-
-  MY_CONSTANT = 0
-
-
 
 end
 
