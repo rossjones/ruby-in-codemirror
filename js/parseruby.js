@@ -2,6 +2,20 @@
 
 
 var RubyParser = Editor.Parser = (function() {
+
+  function buildProgress(word) {
+    var progress = {}, current;
+      for (var i in word) {
+        current = progress;
+        for (var ch in word[i]) {
+          if(!current[word[i][ch]]) current[word[i][ch]] = {};
+          current = current[word[i][ch]];
+        }
+      }
+    return progress;
+  }
+
+
     function wordRegexp(words) {
         return new RegExp("^(?:" + words.join("|") + ")$");
     }
@@ -26,15 +40,31 @@ var RubyParser = Editor.Parser = (function() {
     var LONGCOMMENTCLASS = 'rb-long-comment';
     var WHITESPACEINLONGCOMMENTCLASS = 'rb-long-comment-whitespace';
     var KEWORDCLASS = 'rb-keyword';
-    var REGEXPCLASS = 'rb-regexp'
-    var GLOBALVARCLASS = 'rb-global-variable'
-    var EXECCLASS = 'rb-exec'
+    var REGEXPCLASS = 'rb-regexp';
+    var GLOBALVARCLASS = 'rb-global-variable';
+    var EXECCLASS = 'rb-exec';
+    var INTRANGECLASS = 'rb-range';
+    var OPCLASS = 'rb-operator';
     
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
     var numberStarters = /[0-9]/;
     var keywords = wordRegexp(['begin', 'class', 'ensure', 'nil', 'self', 'when', 'end', 'def', 'false', 'not', 'super', 'while', 'alias', 'defined', 'for', 'or', 'then', 'yield', 'and', 'do', 'if', 'redo', 'true', 'begin', 'else', 'in', 'rescue', 'undef', 'break', 'elsif', 'module', 'retry', 'unless', 'case', 'end', 'next', 'return', 'until']);
+    
+    var changeOperators = ['=', '%=', '/=', '-=', '+=', '|=', '&=', '>>=', '<<=', '*=', '&&=', '||=', '**='];
+    var boolOperators = ['>=', '<=', '==', '===', '=~', '!=', '<>', '!', '?', ':'];
+    var mathOperators = ['/', '*', '+', '-']
+    var structureOperators = ['=>'];
+    var operators = changeOperators.
+                      concat(boolOperators).
+                      concat(mathOperators).
+                      concat(structureOperators);
+    
+    var operatorProgress = buildProgress(operators);
+    
+    console.log(operatorProgress);
+    
     var py, keywords, types, stringStarters, stringTypes, config;
 
 
@@ -215,10 +245,17 @@ var RubyParser = Editor.Parser = (function() {
                   return {content:word, style:BINARYCLASS};
                 }
                 if (source.peek() == '.') {
-                  source.next()
-                  type = FLOATCLASS;
-                  source.nextWhile(matcher(/[0-9_]/));
-                  word += source.get();
+                  source.next();
+                  if (source.peek() != '.') {
+                    type = FLOATCLASS;
+                    source.nextWhile(matcher(/[0-9_]/));
+                    word += source.get();
+                  } else {
+                    word += source.get();
+                    // two dots are used as a range operator
+                    source.push('.');
+                    return {content:word.substr(0, word.length-1), style:type};
+                  }
                 }
                 if (source.peek() == 'e') {
                   source.next();
@@ -290,9 +327,14 @@ var RubyParser = Editor.Parser = (function() {
 
 
             if (ch == '.') {
-              source.nextWhile(matcher(/[\w\d]/));
-              word = source.get();
-              return {content:word, style:METHODCALLCLASS};
+              if (source.peek() == '.') {
+                source.next();
+                return OPCLASS;
+              } else {
+                source.nextWhile(matcher(/[\w\d]/));
+                word = source.get();
+                return {content:word, style:METHODCALLCLASS};
+              }
             }
 
             if (ch == '?') {
@@ -322,6 +364,15 @@ var RubyParser = Editor.Parser = (function() {
               }
             }
 
+            if (operatorProgress[ch]) {
+              var current = operatorProgress;
+              while (current[ch][source.peek()]) {
+                current = current[ch];
+                ch = source.next();
+              }
+              return {content:source.get(), style:OPCLASS};
+            }                
+                
                 
             if (identifierStarters.test(ch)) {
                 source.nextWhile(matcher(/[A-Za-z_]/));
@@ -353,7 +404,9 @@ var RubyParser = Editor.Parser = (function() {
                     }
                     word += source.get();
                 }
+
                 
+
                 // in development
                 if (false && type == INSTANCEMETHODCALLCLASS) {
                   console.log(word);
@@ -362,7 +415,7 @@ var RubyParser = Editor.Parser = (function() {
                   while(!source.endOfLine()) {
                     char = source.next();
                     pushback += char;
-                    
+
                     if (char == ',') { 
                       // get another variable
                     }
@@ -373,7 +426,7 @@ var RubyParser = Editor.Parser = (function() {
                   }
                   //console.log('pushback "'+pushback+'"');
                   source.push(pushback);
-                }
+                }                
                 
                 return {content:word, style:type};
             }

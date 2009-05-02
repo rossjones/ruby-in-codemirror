@@ -22,16 +22,15 @@
 
 <ul>
 <li>author: <a href="mailto:michal@hantl.cz">michal@hantl.cz</a></li>
-<li>version : 0.1.6</li>
+<li>version : 0.1.8</li>
 </ul>
 
 <div style="border: 1px solid black; padding: 0px;">
 <textarea id="code" cols="100" rows="40" style="width:100%">
 
   TODO = [
-    :upcase_constants,
-    :operators,
     :variables_vs_method_calls
+    :blocks_and_params
     :indentation,
   ]
 
@@ -98,6 +97,8 @@ class DinersController < UsersController::SomeOther::NameSpace
     "hello " += 'world'
     128 -= 4
     128 *= 2
+    128..256
+    'a'..'z'
   end
   
   def string

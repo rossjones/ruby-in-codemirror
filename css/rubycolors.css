@@ -39,7 +39,7 @@
 .editbox .rb-entity {
   color:#89BDFF;
 }
-.editbox .rb-keyword {
+.editbox .rb-keyword, .editbox .rb-operator {
   color:#CE864B;
 }
 .editbox .rb-storage {
