@@ -25,6 +25,7 @@ var RubyParser = Editor.Parser = (function() {
     var ASCIICODE = 'rb-ascii'
     var LONGCOMMENTCLASS = 'rb-long-comment';
     var WHITESPACEINLONGCOMMENTCLASS = 'rb-long-comment-whitespace';
+    var KEWORDCLASS = 'rb-keyword';
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
@@ -38,65 +39,8 @@ var RubyParser = Editor.Parser = (function() {
     
     var wasDef = false;
     
-    
-    
     var tokenizeRuby = (function() {
 
-        function inSpecialEndedString(style, endchar) {
-          return function(source, setState) {
-              var stringDelim, threeStr, temp, type, word, possible = {};
-              while (!source.endOfLine()) {
-                  var ch = source.next();
-                  // Skip escaped characters
-                  if (ch == '\\') {
-                    ch = source.next();
-                    ch = source.next();
-                  }
-                  if (ch == endchar) {
-                   setState(normal);
-                   break;
-                  }
-                }
-                return style;
-            }          
-        }
-        
-        function inSingleQuotedString(style) {
-          return function(source, setState) {
-              var stringDelim, threeStr, temp, type, word, possible = {};
-              while (!source.endOfLine()) {
-                  var ch = source.next();
-                  // Skip escaped characters
-                  if (ch == '\\') {
-                    ch = source.next();
-                    ch = source.next();
-                  }
-                  if (ch == '\'') {
-                   setState(normal);
-                   break;
-                  }
-                }
-                return style;
-            }          
-        }
-        
-        function inHereDoc(style, keyword) {
-          return function(source, setState) {
-              var st = '';
-              while (!source.endOfLine()) {
-                var ch = source.next();
-                if (ch == keyword[keyword.length-1]) {
-                  st += source.get();
-                  if (st.substr(st.length - keyword.length, keyword.length) == keyword) {
-                    setState(normal);
-                    return {content:st, style:style};
-                  }
-                }
-              }
-              return style;
-            }          
-        }
-        
         /* state nesting */
         var stateStack = [normal];
         function pushState(state, setState) {
@@ -118,14 +62,33 @@ var RubyParser = Editor.Parser = (function() {
           return stateStack[stateStack.length-1-level];
         }        
 
+
+        /* special states */
+        
+        function inHereDoc(style, keyword) {
+          return function(source, setState) {
+              var st = '';
+              while (!source.endOfLine()) {
+                var ch = source.next();
+                if (ch == keyword[keyword.length-1]) {
+                  st += source.get();
+                  if (st.substr(st.length - keyword.length, keyword.length) == keyword) {
+                    setState(normal);
+                    return {content:st, style:style};
+                  }
+                }
+              }
+              return style;
+            }          
+        }
+
         function inRubyInsertableString(style, ending_char) {
           return inString(style, ending_char, true);
         }
 
         function inStaticString(style, ending_char) {
           return inString(style, ending_char, false);
-        }
-        
+        }        
 
         function inString(style, ending_char, ruby_insertable) {
           return function(source, setState) {
@@ -155,6 +118,8 @@ var RubyParser = Editor.Parser = (function() {
             }          
         }
         
+        /* states for #{} in strings */
+        
         function inRubyInsertableStringNormal(style) {
           var originalState = ancestorState();
           return function(source, setState) {
@@ -178,6 +143,8 @@ var RubyParser = Editor.Parser = (function() {
           }          
         }            
         
+        
+        /* the default ruby code state */
         function normal(source, setState) {
             var stringDelim, threeStr, temp, type, word, possible = {};
             var ch = source.next();
@@ -281,7 +248,7 @@ var RubyParser = Editor.Parser = (function() {
             }
 
             if (ch == '\'') {
-                setState(inSingleQuotedString(STRINGCLASS));
+                pushState(inStaticString(STRINGCLASS, '\''), setState); 
                 return null;
             }            
             
@@ -326,13 +293,17 @@ var RubyParser = Editor.Parser = (function() {
 
                 
             if (identifierStarters.test(ch)) {
-                source.nextWhile(matcher(/[A-Za-z_?!]/));
+                source.nextWhile(matcher(/[A-Za-z_]/));
+                if ((/[!\?]/).test(source.peek())) {
+                  source.next();
+                }
                 word = source.get();
+                /* for now, all identifiers are considered method calls */
                 //type = 'rb-identifier';
                 type = INSTANCEMETHODCALLCLASS;
                 
                 if (keywords.test(word)) {
-                  type = 'rb-keyword';
+                  type = KEWORDCLASS;
                 }
                 if (wasDef) {
                   type = 'rb-method rb-methodname';
@@ -352,6 +323,7 @@ var RubyParser = Editor.Parser = (function() {
                     word += source.get();
                 }
                 
+                // in development
                 if (false && type == INSTANCEMETHODCALLCLASS) {
                   console.log(word);
                   var char = null;
@@ -368,26 +340,22 @@ var RubyParser = Editor.Parser = (function() {
                       break;
                     }
                   }
-                  console.log('pushback "'+pushback+'"');
+                  //console.log('pushback "'+pushback+'"');
                   source.push(pushback);
                 }
                 
-                //console.log(word+' is a '+type);
                 return {content:word, style:type};
             }
-            /**/
             return NORMALCONTEXT;
         }
-
-        
 
         return function(source, startState) {
             return tokenizer(source, startState || normal);
         };
     })();
+    
 
     function parseRuby(source) {
-
         var tokens = tokenizeRuby(source);
         var lastToken = null;
         var column = 0;
@@ -430,7 +398,9 @@ var RubyParser = Editor.Parser = (function() {
                 var token = tokens.next();
                 var type = token.style;
                 var content = token.content;
-                //console.log(token);
+
+                
+                /* long comment support */
                 if (lastToken && lastToken.content == "\n") {
                   if (token.content == '=begin') {
                     inLongComment = true;
@@ -445,7 +415,9 @@ var RubyParser = Editor.Parser = (function() {
                   } else {
                     token.style = LONGCOMMENTCLASS;
                   }
-                }                
+                }
+                
+                
 
                 lastToken = token;
                 return token;
