@@ -24,6 +24,7 @@ var RubyParser = Editor.Parser = (function() {
     var BINARYCLASS = 'rb-binary';
     var ASCIICODE = 'rb-ascii'
     var LONGCOMMENTCLASS = 'rb-long-comment';
+    var WHITESPACEINLONGCOMMENTCLASS = 'rb-long-comment-whitespace';
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
@@ -378,7 +379,11 @@ var RubyParser = Editor.Parser = (function() {
                   }
                 }                
                 if (inLongComment) {
-                  token.style = LONGCOMMENTCLASS;
+                  if (token.style == 'whitespace') {
+                    token.style += ' '+WHITESPACEINLONGCOMMENTCLASS;
+                  } else {
+                    token.style = LONGCOMMENTCLASS;
+                  }
                 }                
 
                 lastToken = token;

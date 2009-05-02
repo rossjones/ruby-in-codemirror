@@ -38,6 +38,9 @@ padding-top:0.2em;
   color:#AEAEAE;
   font-style:italic;
 }
+
+.editbox .rb-long-comment-whitespace {}
+
 .editbox .rb-symbol, .editbox .rb-fixnum, .editbox .rb-ascii {
   color:#6FB1FF;
 }
