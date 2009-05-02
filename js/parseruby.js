@@ -26,6 +26,8 @@ var RubyParser = Editor.Parser = (function() {
     var LONGCOMMENTCLASS = 'rb-long-comment';
     var WHITESPACEINLONGCOMMENTCLASS = 'rb-long-comment-whitespace';
     var KEWORDCLASS = 'rb-keyword';
+    var REGEXPCLASS = 'rb-regexp'
+    
     
     var identifierStarters = /[_A-Za-z]/;    
     var stringStarters = /['"]/;
@@ -251,7 +253,12 @@ var RubyParser = Editor.Parser = (function() {
                 pushState(inStaticString(STRINGCLASS, '\''), setState); 
                 return null;
             }            
-            
+
+            if (ch == '/') {
+                pushState(inStaticString(REGEXPCLASS, '/'), setState); 
+                return null;
+            }            
+
             if (ch == '\"') {
                 pushState(inRubyInsertableString(STRINGCLASS, "\""), setState);
                 return null;

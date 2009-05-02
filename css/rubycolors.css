@@ -80,10 +80,8 @@ color:#8BC9DF;
 color:#DDF2A4;
 }
 
-
-
-.editbox .rb-string_regexp {
-color:#E9C062;
+.editbox .rb-regexp {
+  color:#DF5045;
 }
 
 
