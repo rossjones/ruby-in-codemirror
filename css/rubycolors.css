@@ -72,6 +72,10 @@ color:#9B859D;
 .editbox .rb-instance-var {
 color:#61B2DF;
 }
+.editbox .rb-global-variable {
+  color:#61B2DF;
+  font-style:italic;
+}
 .editbox .rb-class-var {
 color:#8BC9DF;
 }

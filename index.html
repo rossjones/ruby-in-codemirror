@@ -67,10 +67,11 @@ class DinersController < UsersController::SomeOther::NameSpace
   end
   
   def global_variables
+    $global_vars
     begin
       do_something_dangerous
     rescue
-      puts "the exception was #{$!}."
+      puts "the exception was #{$!}."      
     end  
   end
   

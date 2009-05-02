@@ -27,6 +27,7 @@ var RubyParser = Editor.Parser = (function() {
     var WHITESPACEINLONGCOMMENTCLASS = 'rb-long-comment-whitespace';
     var KEWORDCLASS = 'rb-keyword';
     var REGEXPCLASS = 'rb-regexp'
+    var GLOBALVARCLASS = 'rb-global-variable'
     
     
     var identifierStarters = /[_A-Za-z]/;    
@@ -248,17 +249,26 @@ var RubyParser = Editor.Parser = (function() {
                 source.next();
                 return {content:source.get(), style:STRINGCLASS}; 
             }
+            
+            if (ch == '$') {
+              if ((/[!@_\.&~n=\/\\0\*$\?]/).test(source.peek())) {
+                source.next();
+              } else {
+                source.nextWhile(matcher(identifierStarters));
+              }
+              return {content:source.get(), style:GLOBALVARCLASS};
+            }
 
             if (ch == '\'') {
                 pushState(inStaticString(STRINGCLASS, '\''), setState); 
                 return null;
-            }            
-
+            }
+            
             if (ch == '/') {
                 pushState(inStaticString(REGEXPCLASS, '/'), setState); 
                 return null;
-            }            
-
+            }
+            
             if (ch == '\"') {
                 pushState(inRubyInsertableString(STRINGCLASS, "\""), setState);
                 return null;
