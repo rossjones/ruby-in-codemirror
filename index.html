@@ -22,15 +22,21 @@
 
 <ul>
 <li>author: <a href="mailto:michal@hantl.cz">michal@hantl.cz</a></li>
-<li>version : 0.1.8</li>
+<li>version : 0.1.9</li>
 </ul>
 
 <div style="border: 1px solid black; padding: 0px;">
 <textarea id="code" cols="100" rows="40" style="width:100%">
 
+  TODO = [
+    :blocks_and_params,
+    :method_params_with_default_values
+    :indentation
+  ]
+
   ROADMAP = [
     '0.2 milestone' => [
-        :variables_vs_method_calls
+        :overall_ruby_highlighting_support
         :blocks_and_params,
         :indentation
       ]
@@ -47,10 +53,10 @@
   
 class DinersController < UsersController::SomeOther::NameSpace
 
-  def test_params param1, param2
+  def test_params param1, param2 = PI
     method
     param1
-    param2
+    param2 = 'abc'
   end
   
   param1
@@ -160,17 +166,24 @@ class DinersController < UsersController::SomeOther::NameSpace
     <<EOF
     The price is #{$Price}.
     EOF
-  
-    # those are not supported for now
+
+    eval <<-EOS			# delimiters can be indented
+      def foo
+       print "foo\n"
+      end
+    EOS  
+
+    print <<`EOC`			# execute commands
+     echo hi there
+     echo lo there
+    EOC
+      
+  # those complex ones are not supported for now
   
     "EOF";			# same as above
     The price is #{$Price}.
     EOF
-  
-    print <<`EOC`			# execute commands
-    echo hi there
-    echo lo there
-    EOC
+
   
     print <<"foo", <<"bar"	# you can stack them
     I said foo.
@@ -184,12 +197,6 @@ class DinersController < UsersController::SomeOther::NameSpace
     THIS
     and here's another.
     THAT
-  
-    eval <<-EOS			# delimiters can be indented
-      def foo
-       print "foo\n"
-      end
-    EOS
   end
 
 end

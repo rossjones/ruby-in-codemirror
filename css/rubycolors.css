@@ -25,6 +25,14 @@
   font-style:italic;
 }
 
+.editbox .rb-method-parameter {
+  color:#8AA6C1;
+}
+
+.editbox .rb-variable, .editbox .rb-method-call {
+  color:#f0f0f0;
+}
+
 .editbox .rb-long-comment-whitespace {}
 
 .editbox .rb-symbol, .editbox .rb-fixnum, .editbox .rb-ascii {

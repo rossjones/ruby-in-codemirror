@@ -1,8 +1,4 @@
 
-
-
-
-
 var RubyParser = Editor.Parser = (function() {
   // Token types that can be considered to be atoms.
   var atomicTypes = {"atom": true, "number": true, "variable": true, "string": true, "regexp": true};
@@ -58,7 +54,7 @@ var RubyParser = Editor.Parser = (function() {
     return function(firstChars) {
       var firstChar = firstChars && firstChars.charAt(0), type = lexical.type;
       var closing = firstChar == type;
-      console.log(lexical);
+      //console.log(lexical);
       
       if (type == "vardef")
         return lexical.indented + 2;
@@ -263,147 +259,82 @@ var RubyParser = Editor.Parser = (function() {
     }
     // Dispatches various types of statements based on the type of the
     // current token.
-    var lastVar = null;
+    var lastToken = null, inLongComment = false;
     
-    function statement(type){
-      if (type.content == "do" || type.content == "begin" || type.content == "class" || type.content == "module") {
+    function statement(token){
+      if (token.content == "do" || token.content == "begin" || token.content == "class" || token.content == "module") {
         pushcontext();
       }
-      if (type.style == KEWORDCLASS && type.content == "end") {
+      if (token.style == KEWORDCLASS && token.content == "end") {
         popcontext();
       }      
-      if (type.content == '=') {
-        console.log('LAST VAR ', lastVar);
-        if (lastVar) {
-          //lastVar.style = METHODPARAMCLASS;
-          register(lastVar.content, VARIABLECLASS);
-        }
-      }
-      if (type.style == INSTANCEMETHODCALLCLASS) {
-        lastVar = type;
-        //console.log('LAST VAR ', lastVar);
+      if (token.style == INSTANCEMETHODCALLCLASS) {
+        lastVar = token;
       }
       
-      if (type.content == "def") {
+      if (token.content == "def") {
         pushcontext();
         cont(functiondef);
-      } else if (type.style == 'rb-method') {
-        //console.log('HHHH: ',type);
-        if (isRegistered(type.content)) {
-          //console.log('HOOOOORRRAAAA!!!')
-          mark(registeredMark(type.content));
+      } else if (token.style == 'rb-method' || token.style == 'rb-variable') {
+        //console.log(token);
+        if (isRegistered(token.content)) {
+          mark(registeredMark(token.content));
         }
         cont(statement);
       } else cont(statement);
+
+      if (token.style == VARIABLECLASS) {
+        register(token.content, VARIABLECLASS);
+      }
+      
+      // long comment support
+      if (lastToken && lastToken.content == "\n") {
+        if (token.content == '=begin') {
+          inLongComment = true;
+        }
+        if (token.content == '=end') {
+          inLongComment = false;
+        }
+      }                
+      if (inLongComment) {
+        if (token.style == 'whitespace') {
+          token.style += ' '+WHITESPACEINLONGCOMMENTCLASS;
+        } else {
+          token.style = LONGCOMMENTCLASS;
+        }
+      }
+      lastToken = token;
     }
+    
+    
     
     // A function definition creates a new context, and the variables
     // in its argument list have to be added to this context.
-    function functiondef(type, value){
-      console.log(type, value);
-      if (type.style == 'rb-method') {
-        console.log('register local variable '+type.content);
+    function functiondef(token, value){
+      if (token.style == 'rb-method' || token.style == 'rb-variable') {
         register(value, METHODPARAMCLASS);
+        mark(METHODPARAMCLASS);
         cont(functiondef);
       }
       else if (value == "\n") {
-        console.log('returning to statement');
-        //cont(statement);
+        //console.log('returning to statement');
       } else {
         cont(functiondef);
       }
     }
     
     function longComment(token, value) {
-    
+      // TODO
     }
     
     function funarg(type, value){
       if (type == "variable"){register(value); cont();}
     }
 
-    
-    
-    // Dispatch expression types.
-    function expression(type){
-      if (atomicTypes.hasOwnProperty(type)) cont(maybeoperator);
-      else if (type == "def") cont(functiondef);
-    }
-    
-    
-    // Called for places where operators, function calls, or
-    // subscripts are valid. Will skip on to the next action if none
-    // is found.
-    function maybeoperator(type){
-      if (type == "operator") cont(expression);
-      else if (type == "(") cont(pushlex(")"), expression, commasep(expression, ")"), poplex, maybeoperator);
-      else if (type == ".") cont(property, maybeoperator);
-      else if (type == "[") cont(pushlex("]"), expression, expect("]"), poplex, maybeoperator);
-    }
-    // When a statement starts with a variable name, it might be a
-    // label. If no colon follows, it's a regular statement.
-    function maybelabel(type){
-      if (type == ":") cont(poplex, statement);
-      else pass(maybeoperator, expect(";"), poplex);
-    }
-    // Property names need to have their style adjusted -- the
-    // tokenizer thinks they are variables.
-    function property(type){
-      if (type == "variable") {mark("js-property"); cont();}
-    }
-    // This parses a property and its value in an object literal.
-    function objprop(type){
-      if (type == "variable") mark("js-property");
-      if (atomicTypes.hasOwnProperty(type)) cont(expect(":"), expression);
-    }
-    // Parses a comma-separated list of the things that are recognized
-    // by the 'what' argument.
-    function commasep(what, end){
-      function proceed(type) {
-        if (type == ",") cont(what, proceed);
-        else if (type == end) cont();
-        else cont(expect(end));
-      };
-      return function commaSeparated(type) {
-        if (type == end) cont();
-        else pass(what, proceed);
-      };
-    }
     // Look for statements until a closing brace is found.
     function block(type){
       if (type == "}") cont();
       else pass(statement, block);
-    }
-    // Variable definitions are split into two actions -- 1 looks for
-    // a name or the end of the definition, 2 looks for an '=' sign or
-    // a comma.
-    function vardef1(type, value){
-      if (type == "variable"){register(value); cont(vardef2);}
-      else cont();
-    }
-    function vardef2(type, value){
-      if (value == "=") cont(expression, vardef2);
-      else if (type == ",") cont(vardef1);
-    }
-    // For loops.
-    function forspec1(type){
-      if (type == "var") cont(vardef1, forspec2);
-      else if (type == ";") pass(forspec2);
-      else if (type == "variable") cont(formaybein);
-      else pass(forspec2);
-    }
-    function formaybein(type, value){
-      if (value == "in") cont(expression);
-      else cont(maybeoperator, forspec2);
-    }
-    function forspec2(type, value){
-      if (type == ";") cont(forspec3);
-      else if (value == "in") cont(expression);
-      else cont(expression, expect(";"), forspec3);
-    }
-    function forspec3(type) {
-      if (type == ")") pass();
-      else cont(expression);
     }
 
 
@@ -453,19 +384,7 @@ var RubyParser = Editor.Parser = (function() {
         var tokens = tokenizeRuby(source);
         var lastToken = null;
         var column = 0;
-        
-        var indentRuby = function() {
-            return function(nextChars, currentLevel, direction) {
-                //console.log([nextChars, currentLevel, direction]);
-                if (direction === true) {
-                    return currentLevel + 2;
-                } else if (direction === false) {
-                    return currentLevel - 2;
-                } else {
-                    return currentLevel;
-                }
-            }
-        }
+
         
         
         var inLongComment = false;

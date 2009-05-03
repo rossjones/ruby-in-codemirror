@@ -183,6 +183,22 @@ var tokenizeRuby = (function() {
 		}            
 
 
+
+
+      function testOperator(source, ch) {
+        if (operatorProgress[ch]) {
+          var current = operatorProgress;
+          while (current[ch][source.peek()]) {
+            current = current[ch];
+            ch = source.next();
+          }
+          return {content:source.get(), style:OPCLASS};
+        } else {
+          return false;
+        }
+      }
+
+
 		/* the default ruby code state */
 		function normal(source, setState) {
 			var stringDelim, threeStr, temp, type, word, possible = {};
@@ -358,16 +374,11 @@ var tokenizeRuby = (function() {
 				}
 			  }
 			}
-
-			if (operatorProgress[ch]) {
-			  var current = operatorProgress;
-			  while (current[ch][source.peek()]) {
-				current = current[ch];
-				ch = source.next();
-			  }
-			  return {content:source.get(), style:OPCLASS};
-			}                
-
+      
+      var result = testOperator(source, ch);
+      if (result) {
+        return result;
+      }
 
 			if (identifierStarters.test(ch)) {
 				source.nextWhile(matcher(/[A-Za-z0-9_]/));
@@ -401,25 +412,34 @@ var tokenizeRuby = (function() {
 				}
 
 
-
-				// in development
-				if (false && type == INSTANCEMETHODCALLCLASS) {
+				if (type == INSTANCEMETHODCALLCLASS) {
 				  var char = null;
 				  pushback = '';
 				  while(!source.endOfLine()) {
-					char = source.next();
-					pushback += char;
-
-					if (char == ',') { 
-					  // get another variable
-					}
-					if (char == '=') { 
-					  type = VARIABLECLASS;
-					  break;
-					}
+            char = source.next();
+  
+            if (char == ',') { 
+              // get another variable
+            }
+            var result = testOperator(source, char);
+            if (result) {
+              pushback += result.content;
+              //console.log('RRRRRRRRresult is ', result);
+            }
+            pushback += source.get();
+            
+            if (result && result.content == '=') {
+              //console.log('YESSSSSSss ', result);
+              type = VARIABLECLASS;
+              break;
+            }    
 				  }
-				  //console.log('pushback "'+pushback+'"');
+          //console.log('pushback "'+pushback+'"');
+          //console.log('word "'+word+'"');
+          //console.log('get ', source.get());
+          
 				  source.push(pushback);
+          return {content:word, style:type};
 				}                
 
 				return {content:word, style:type};
