@@ -50,6 +50,7 @@ var RubyParser = Editor.Parser = (function() {
   var EXECCLASS = 'rb-exec';
   var INTRANGECLASS = 'rb-range';
   var OPCLASS = 'rb-operator';
+  var METHODPARAMCLASS = 'rb-method-parameter';
 
 
   // My favourite JavaScript indentation rules.
@@ -205,16 +206,20 @@ var RubyParser = Editor.Parser = (function() {
       context = context.prev;
     }
     // Register a variable in the current scope.
-    function register(varname){
+    function register(varname, style){
       if (context){
-        mark("js-variabledef");
-        context.vars[varname] = true;
+        context.vars[varname] = style;
       }
     }
     // Register a variable in the current scope.
     function isRegistered(varname){
-      return context && context.vars[varname] === true;
+      return context && context.vars[varname];
     }
+
+    function registeredMark(varname){
+      return context.vars[varname];
+    }
+
     // Check whether a variable is defined in the current scope.
     function inScope(varname){
       var cursor = context;
@@ -258,7 +263,7 @@ var RubyParser = Editor.Parser = (function() {
     }
     // Dispatches various types of statements based on the type of the
     // current token.
-    
+    var lastVar = null;
     
     function statement(type){
       if (type.content == "do" || type.content == "begin" || type.content == "class" || type.content == "module") {
@@ -266,7 +271,19 @@ var RubyParser = Editor.Parser = (function() {
       }
       if (type.style == KEWORDCLASS && type.content == "end") {
         popcontext();
+      }      
+      if (type.content == '=') {
+        console.log('LAST VAR ', lastVar);
+        if (lastVar) {
+          //lastVar.style = METHODPARAMCLASS;
+          register(lastVar.content, VARIABLECLASS);
+        }
       }
+      if (type.style == INSTANCEMETHODCALLCLASS) {
+        lastVar = type;
+        //console.log('LAST VAR ', lastVar);
+      }
+      
       if (type.content == "def") {
         pushcontext();
         cont(functiondef);
@@ -274,7 +291,7 @@ var RubyParser = Editor.Parser = (function() {
         //console.log('HHHH: ',type);
         if (isRegistered(type.content)) {
           //console.log('HOOOOORRRAAAA!!!')
-          mark('rb-variable');
+          mark(registeredMark(type.content));
         }
         cont(statement);
       } else cont(statement);
@@ -286,7 +303,7 @@ var RubyParser = Editor.Parser = (function() {
       console.log(type, value);
       if (type.style == 'rb-method') {
         console.log('register local variable '+type.content);
-        register(value);
+        register(value, METHODPARAMCLASS);
         cont(functiondef);
       }
       else if (value == "\n") {
@@ -295,6 +312,10 @@ var RubyParser = Editor.Parser = (function() {
       } else {
         cont(functiondef);
       }
+    }
+    
+    function longComment(token, value) {
+    
     }
     
     function funarg(type, value){
@@ -307,11 +328,6 @@ var RubyParser = Editor.Parser = (function() {
     function expression(type){
       if (atomicTypes.hasOwnProperty(type)) cont(maybeoperator);
       else if (type == "def") cont(functiondef);
-      else if (type == "keyword c") cont(expression);
-      else if (type == "(") cont(pushlex(")"), expression, expect(")"), poplex, maybeoperator);
-      else if (type == "operator") cont(expression);
-      else if (type == "[") cont(pushlex("]"), commasep(expression, "]"), poplex, maybeoperator);
-      else if (type == "{") cont(pushlex("}"), commasep(objprop, "}"), poplex, maybeoperator);
     }
     
     

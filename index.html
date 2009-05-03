@@ -47,12 +47,20 @@
   
 class DinersController < UsersController::SomeOther::NameSpace
 
-  def method_name param1, param2
+  def test_params param1, param2
     method
     param1
     param2
   end
   
+  param1
+
+  def test_variables
+    myvar = 'value'
+    myvar
+    method
+  end
+
   param1
 
     __FILE__
