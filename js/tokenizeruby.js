@@ -297,7 +297,7 @@ var tokenizeRuby = (function() {
 			  if ((/[!@_\.&~n=\/\\0\*$\?]/).test(source.peek())) {
 				source.next();
 			  } else {
-				source.nextWhile(matcher(identifierStarters));
+				source.nextWhile(matcher(/[A-Za-z0-9_]/));
 			  }
 			  return {content:source.get(), style:GLOBALVARCLASS};
 			}
@@ -370,7 +370,7 @@ var tokenizeRuby = (function() {
 
 
 			if (identifierStarters.test(ch)) {
-				source.nextWhile(matcher(/[A-Za-z_]/));
+				source.nextWhile(matcher(/[A-Za-z0-9_]/));
 				if ((/[!\?]/).test(source.peek())) {
 				  source.next();
 				}
