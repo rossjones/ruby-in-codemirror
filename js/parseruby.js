@@ -72,7 +72,7 @@ var RubyParser = Editor.Parser = (function() {
   }
 
   // The parser-iterator-producing function itself.
-  function parseJS(input, basecolumn) {
+  function parseRuby(input, basecolumn) {
     // Wrap the input in a token stream
     var tokens = tokenizeRuby(input);
     // The parser state. cc is a stack of actions that have to be
@@ -209,7 +209,15 @@ var RubyParser = Editor.Parser = (function() {
     }
     // Register a variable in the current scope.
     function isRegistered(varname){
-      return context && context.vars[varname];
+      //console.log('"'+varname+'"', context);
+      if (context && context.vars[varname]) return true;
+      var c = context.prev;
+      while(c) {
+        //console.log(c);
+        if (c.vars[varname]) return true;
+        c = c.prev;
+      }
+      return false;
     }
 
     function registeredMark(varname){
@@ -259,54 +267,89 @@ var RubyParser = Editor.Parser = (function() {
     }
     // Dispatches various types of statements based on the type of the
     // current token.
-    var lastToken = null, inLongComment = false;
+    var lastToken = null;
     
     function statement(token){
+    
       if (token.content == "do" || token.content == "begin" || token.content == "class" || token.content == "module") {
+        //if (token.content == 'do') console.log('before', context);
         pushcontext();
-      }
+        //if (token.content == 'do') console.log('after', context);
+    }
       if (token.style == KEWORDCLASS && token.content == "end") {
         popcontext();
       }      
       if (token.style == INSTANCEMETHODCALLCLASS) {
         lastVar = token;
       }
+      if (token.content == '|' && (lastToken.content == "do" || lastToken.content == "{")) {
+        mark(NORMALCONTEXT);
+        cont(blockparams);
+        lastToken = token;
+        return;
+        //cont(statement);
+      }
       
       if (token.content == "def") {
         pushcontext();
         cont(functiondef);
-      } else if (token.style == 'rb-method' || token.style == 'rb-variable') {
-        //console.log(token);
+        lastToken = token;
+        return;
+      } 
+      if (token.style == 'rb-method' || token.style == 'rb-variable') {
+        //console.log('is "'+token.content+'" registered?');
         if (isRegistered(token.content)) {
           mark(registeredMark(token.content));
         }
-        cont(statement);
-      } else cont(statement);
+      }
 
       if (token.style == VARIABLECLASS) {
         register(token.content, VARIABLECLASS);
       }
-      
+
       // long comment support
       if (lastToken && lastToken.content == "\n") {
         if (token.content == '=begin') {
-          inLongComment = true;
-        }
-        if (token.content == '=end') {
-          inLongComment = false;
-        }
-      }                
-      if (inLongComment) {
-        if (token.style == 'whitespace') {
-          token.style += ' '+WHITESPACEINLONGCOMMENTCLASS;
-        } else {
-          token.style = LONGCOMMENTCLASS;
+          cont(longccomment);
+          lastToken = token;
+          return;
         }
       }
+
       lastToken = token;
+      cont(statement);
     }
     
+    function longccomment(token, value) {
+      if (token.style == 'whitespace') {
+        token.style += ' '+WHITESPACEINLONGCOMMENTCLASS;
+      } else {
+        token.style = LONGCOMMENTCLASS;
+      }
+      if (lastToken && lastToken.content == "\n") {
+        if (token.content == '=end') {
+          return;
+        }
+      }                
+      lastToken = token;
+      cont(longccomment);
+    }
     
+    function blockparams(token, value) {
+      //console.log(token);
+      if (token.style == 'rb-method' || token.style == 'rb-variable') {
+        mark(METHODPARAMCLASS);
+        register(token.value, METHODPARAMCLASS);
+      }
+      if (value != '|' && value != "\n") {
+        cont(blockparams);                
+      } else {
+        if (token.content == '|') {
+          token.style = NORMALCONTEXT;
+        }
+        // return to statement
+      }
+    }
     
     // A function definition creates a new context, and the variables
     // in its argument list have to be added to this context.
@@ -341,103 +384,6 @@ var RubyParser = Editor.Parser = (function() {
     return parser;
   }
 
-  return {make: parseJS, electricChars: "{}:"};
+  return {make: parseRuby, electricChars: "{}:"};
 })();
 
-
-
-/*
-var RubyParser = Editor.Parser = (function() {
-
-    var NORMALCONTEXT = 'rb-normal';
-    var ERRORCLASS = 'rb-error';
-    var COMMENTCLASS = 'rb-comment';
-    var SYMBOLCLASS = 'rb-symbol';
-    var CONSTCLASS = 'rb-constant';
-    var OPCLASS = 'rb-operator';
-    var INSTANCEMETHODCALLCLASS = 'rb-method'
-    var VARIABLECLASS = 'rb-variable';
-    var STRINGCLASS = 'rb-string';
-    var FIXNUMCLASS =  'rb-fixnum rb-numeric';
-    var METHODCALLCLASS = 'rb-method-call';
-    var HEREDOCCLASS = 'rb-heredoc';
-    var ERRORCLASS = 'rb-parse-error';
-    var BLOCKCOMMENT = 'rb-block-comment';
-    var FLOATCLASS = 'rb-float';
-    var HEXNUMCLASS = 'rb-hexnum';
-    var BINARYCLASS = 'rb-binary';
-    var ASCIICODE = 'rb-ascii'
-    var LONGCOMMENTCLASS = 'rb-long-comment';
-    var WHITESPACEINLONGCOMMENTCLASS = 'rb-long-comment-whitespace';
-    var KEWORDCLASS = 'rb-keyword';
-    var REGEXPCLASS = 'rb-regexp';
-    var GLOBALVARCLASS = 'rb-global-variable';
-    var EXECCLASS = 'rb-exec';
-    var INTRANGECLASS = 'rb-range';
-    var OPCLASS = 'rb-operator';
-    
-    var py, keywords, types, stringStarters, stringTypes, config;
-
-    function configure(conf) { config = conf; }
-    
-    function parseRuby(source) {
-        var tokens = tokenizeRuby(source);
-        var lastToken = null;
-        var column = 0;
-
-        
-        
-        var inLongComment = false;
-
-        var iter = {
-            next: function() {
-                var token = tokens.next();
-                var type = token.style;
-                var content = token.content;
-                    
-                if (token.content == "\n") {
-                    token.indentation = indentRuby();
-                }
-                
-                
-                // long comment support
-                if (lastToken && lastToken.content == "\n") {
-                  if (token.content == '=begin') {
-                    inLongComment = true;
-                  }
-                  if (token.content == '=end') {
-                    inLongComment = false;
-                  }
-                }                
-                if (inLongComment) {
-                  if (token.style == 'whitespace') {
-                    token.style += ' '+WHITESPACEINLONGCOMMENTCLASS;
-                  } else {
-                    token.style = LONGCOMMENTCLASS;
-                  }
-                }
-                
-                
-
-                lastToken = token;
-                return token;
-            },
-
-            copy: function() {
-                //var _context = context, 
-                var _tokenState = tokens.state;
-                return function(source) {
-                    tokens = tokenizeRuby(source, _tokenState);
-                    //context = _context;
-                    return iter;
-                };
-            }
-        };
-        return iter;
-    }
-
-    return {make: parseRuby,
-            electricChars: "",
-            configure: configure};
-})();
-/**/

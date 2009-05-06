@@ -374,11 +374,11 @@ var tokenizeRuby = (function() {
 				}
 			  }
 			}
-      
-      var result = testOperator(source, ch);
-      if (result) {
-        return result;
-      }
+
+			var result = testOperator(source, ch);
+			if (result) {
+				return result;
+			}
 
 			if (identifierStarters.test(ch)) {
 				source.nextWhile(matcher(/[A-Za-z0-9_]/));

@@ -52,7 +52,7 @@
   
 class DinersController < UsersController::SomeOther::NameSpace
 
-  def test_params param1, param2 = PI
+  def params param1, param2 = PI
     method
     param1
     param2 = 'abc'
@@ -60,13 +60,25 @@ class DinersController < UsersController::SomeOther::NameSpace
   
   param1
 
-  def test_variables
-    myvar = 'value'
-    myvar
+  def variable_scope
+    a, b = 'a', 'b'
+    a    
     method
+    b
   end
 
-  param1
+  a
+
+  def block_scope
+    myvar = 'value'
+    ['a', 'b'].each do |letter|
+        myvar << letter
+    end
+    ['a', 'b'].each { |letter|
+        myvar << letter
+    }
+  end
+
 
     __FILE__
     ANOTHER_CONSTANT
@@ -205,7 +217,7 @@ end
 
 <script type="text/javascript">
     var editor = CodeMirror.fromTextArea('code', {
-        parserfile: ["../../js/parseruby.js", "../../js/tokenizeruby.js"],
+        parserfile: ["../../js/tokenizeruby.js", "../../js/parseruby.js"],
         stylesheet: "css/rubycolors.css",
         path: "codemirror/js/",
         lineNumbers: true,
