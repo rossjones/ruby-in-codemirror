@@ -81,7 +81,7 @@ var RubyParser = Editor.Parser = (function() {
     // semicolon. Actions at the end of the stack go first. It is
     // initialized with an infinitely looping action that consumes
     // whole statements.
-    var cc = [statements];
+    var cc = [statement];
     // Context contains information about the current local scope, the
     // variables defined in that, and the scopes above it.
     var context = null;
@@ -143,10 +143,7 @@ var RubyParser = Editor.Parser = (function() {
           // Marked is used to change the style of the current token.
           if (marked)
             token.style = marked;
-          // Here we differentiate between local and global variables.
-          else if (token.type == "variable" && inScope(token.content))
-            token.style = "rb-localvariable";
-          return token;
+            return token;
         }
       }
     }
@@ -195,7 +192,7 @@ var RubyParser = Editor.Parser = (function() {
 
     // Push a new scope. Will automatically link the current scope.
     function pushcontext(){
-      context = {prev: context, vars: {"this": true, "arguments": true}};
+      context = {prev: context, vars: {"this": true, "arguments": true, 'block' : 0}};
     }
     // Pop off the current scope.
     function popcontext(){
@@ -210,12 +207,14 @@ var RubyParser = Editor.Parser = (function() {
     // Register a variable in the current scope.
     function isRegistered(varname){
       //console.log('"'+varname+'"', context);
-      if (context && context.vars[varname]) return true;
-      var c = context.prev;
-      while(c) {
-        //console.log(c);
-        if (c.vars[varname]) return true;
-        c = c.prev;
+      if (context) {
+        if (context.vars[varname]) return true;
+        var c = context.prev;
+        while(c) {
+          //console.log(c);
+          if (c.vars[varname]) return true;
+          c = c.prev;
+        }
       }
       return false;
     }
@@ -262,30 +261,50 @@ var RubyParser = Editor.Parser = (function() {
     }
 
     // Looks for a statement, and then calls itself.
-    function statements(type){
+/*    function statements(type){
       return pass(statement, statements);
-    }
+    }*/
     // Dispatches various types of statements based on the type of the
     // current token.
     var lastToken = null;
+    var shown = 0;
     
     function statement(token){
-    
-      if (token.content == "do" || token.content == "begin" || token.content == "class" || token.content == "module") {
-        //if (token.content == 'do') console.log('before', context);
+      /*
+      if(shown > 100 && shown < 200) {
+        console.log('statement', token);
+      }*/
+      shown += 1;
+      if (token.content == "begin" || token.content == "class" || token.content == "module") {
+        if (token.content == 'do') console.log('before', context);
+        lastToken = token;
         pushcontext();
-        //if (token.content == 'do') console.log('after', context);
-    }
+        cont(statement);
+        if (token.content == 'do') console.log('after', context);
+        return;
+      }
+      if (token.content == "do") {
+        if (!context.block) {
+          context.block = 0;
+        }
+        context.block += 1
+      }
+      
       if (token.style == KEWORDCLASS && token.content == "end") {
-        popcontext();
+        if (context.block && context.block > 0) {
+          context.block -= 1;
+        } else{
+          popcontext();
+        }
       }      
       if (token.style == INSTANCEMETHODCALLCLASS) {
         lastVar = token;
       }
       if (token.content == '|' && (lastToken.content == "do" || lastToken.content == "{")) {
+        lastToken = token;
+        console.log('after 2', context);
         mark(NORMALCONTEXT);
         cont(blockparams);
-        lastToken = token;
         return;
         //cont(statement);
       }
@@ -297,7 +316,7 @@ var RubyParser = Editor.Parser = (function() {
         return;
       } 
       if (token.style == 'rb-method' || token.style == 'rb-variable') {
-        //console.log('is "'+token.content+'" registered?');
+        console.log('is "'+token.content+'" registered?');
         if (isRegistered(token.content)) {
           mark(registeredMark(token.content));
         }
@@ -328,6 +347,7 @@ var RubyParser = Editor.Parser = (function() {
       }
       if (lastToken && lastToken.content == "\n") {
         if (token.content == '=end') {
+          cont(statement);
           return;
         }
       }                
@@ -336,7 +356,7 @@ var RubyParser = Editor.Parser = (function() {
     }
     
     function blockparams(token, value) {
-      //console.log(token);
+      console.log('blockparams', token);
       if (token.style == 'rb-method' || token.style == 'rb-variable') {
         mark(METHODPARAMCLASS);
         register(token.value, METHODPARAMCLASS);
@@ -348,7 +368,10 @@ var RubyParser = Editor.Parser = (function() {
           token.style = NORMALCONTEXT;
         }
         // return to statement
+        cont(statement);
+        console.log('returning to statement');
       }
+      lastToken = token;
     }
     
     // A function definition creates a new context, and the variables
@@ -361,6 +384,7 @@ var RubyParser = Editor.Parser = (function() {
       }
       else if (value == "\n") {
         //console.log('returning to statement');
+        cont(statement);
       } else {
         cont(functiondef);
       }
