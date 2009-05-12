@@ -318,7 +318,7 @@ var tokenizeRuby = (function() {
 			  return {content:source.get(), style:GLOBALVARCLASS};
 			}
 
-			if (ch == '\'') {
+			if (ch == '\'' && source.peek() != ' ') {
 			  pushState(inStaticString(STRINGCLASS, '\''), setState); 
 			  return null;
 			}
@@ -329,7 +329,7 @@ var tokenizeRuby = (function() {
 			}
 
 
-			if (ch == '/') {
+			if (ch == '/' ) {
 			  pushState(inStaticString(REGEXPCLASS, '/'), setState); 
 			  return null;
 			}

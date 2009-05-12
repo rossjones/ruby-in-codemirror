@@ -276,11 +276,9 @@ var RubyParser = Editor.Parser = (function() {
       }*/
       shown += 1;
       if (token.content == "begin" || token.content == "class" || token.content == "module") {
-        if (token.content == 'do') console.log('before', context);
         lastToken = token;
         pushcontext();
         cont(statement);
-        if (token.content == 'do') console.log('after', context);
         return;
       }
       if (token.content == "do") {
@@ -302,7 +300,7 @@ var RubyParser = Editor.Parser = (function() {
       }
       if (token.content == '|' && (lastToken.content == "do" || lastToken.content == "{")) {
         lastToken = token;
-        console.log('after 2', context);
+        //console.log('after 2', context);
         mark(NORMALCONTEXT);
         cont(blockparams);
         return;
@@ -316,7 +314,7 @@ var RubyParser = Editor.Parser = (function() {
         return;
       } 
       if (token.style == 'rb-method' || token.style == 'rb-variable') {
-        console.log('is "'+token.content+'" registered?');
+        //console.log('is "'+token.content+'" registered?');
         if (isRegistered(token.content)) {
           mark(registeredMark(token.content));
         }
@@ -356,7 +354,7 @@ var RubyParser = Editor.Parser = (function() {
     }
     
     function blockparams(token, value) {
-      console.log('blockparams', token);
+      //console.log('blockparams', token);
       if (token.style == 'rb-method' || token.style == 'rb-variable') {
         mark(METHODPARAMCLASS);
         register(token.value, METHODPARAMCLASS);
@@ -369,7 +367,7 @@ var RubyParser = Editor.Parser = (function() {
         }
         // return to statement
         cont(statement);
-        console.log('returning to statement');
+        //console.log('returning to statement');
       }
       lastToken = token;
     }
