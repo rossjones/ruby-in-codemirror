@@ -133,15 +133,16 @@ var tokenizeRuby = (function() {
 					ch = source.next();
 				  }
 				  if (ch == ending_char) {
-				   popState(setState);
+				   //popState(setState);
+				   setState(normal);
 				   break;
 				  }
 				  if (ch == '#' && source.peek() == '{') {
-				   source.next();
+				   //source.next();
 				   if (ruby_insertable) {
-					 pushState(inRubyInsertableStringNormal(style), setState);
+					 //setState(inRubyInsertableStringNormal(style, inString(style, ending_char, ruby_insertable)));
 				   } else {
-					 pushState(inIgnoredBracesString(style), setState);
+					 //pushState(inIgnoredBracesString(style), setState);
 				   }
 				   return style;
 				  }
@@ -151,8 +152,9 @@ var tokenizeRuby = (function() {
 		}
 
 		/* states for #{} in strings */
-
-		function inRubyInsertableStringNormal(style) {
+		
+		
+		function inRubyInsertableStringNormal(style, returnTo) {
 		  var originalState = ancestorState();
 		  var waitingForBraces = 1;
 		  return function(source, setState) {
@@ -164,14 +166,15 @@ var tokenizeRuby = (function() {
 			}            
 			if (waitingForBraces == 0) {
 			  source.next();
-			  popState(setState);
+			  //popState(setState);
+			  setState(returnTo);
 			  return style;
 			} else {
 			  return originalState(source, setState);
 			}
 		  }          
 		}            
-
+/*
 		function inIgnoredBracesString(style) {
 		  return function(source, setState) {
 			var ch = source.next();
@@ -181,7 +184,7 @@ var tokenizeRuby = (function() {
 			return style;
 		  }          
 		}            
-
+*/
 
 
 
@@ -288,11 +291,11 @@ var tokenizeRuby = (function() {
 				type = STRINGCLASS;
 				var peek = source.peek();
 				if (peek == 'w') {
-				  pushState(inStaticString(STRINGCLASS, '}'), setState);                  
+				  setState(inStaticString(STRINGCLASS, '}'));                  
 				  return null;
 				}
 				if (peek == 'W') {
-				  pushState(inRubyInsertableString(STRINGCLASS, '}'), setState);
+				  setState(inRubyInsertableString(STRINGCLASS, '}'));
 				  return null;
 				}                
 
@@ -301,10 +304,10 @@ var tokenizeRuby = (function() {
 				  var ending = source.next();
 				  if (ending == '(') ending = ')';
 				  if (ending == '{') ending = '}';                  
-				  pushState(inString(STRINGCLASS, ending, peek == 'Q'), setState);
+				  setState(inString(STRINGCLASS, ending, peek == 'Q'));
 				  return {content:source.get(), style:STRINGCLASS}; 
 				}
-				pushState(inRubyInsertableString(STRINGCLASS, source.peek()), setState);
+				setState(inRubyInsertableString(STRINGCLASS, source.peek()));
 				source.next();
 				return {content:source.get(), style:STRINGCLASS}; 
 			}
@@ -318,24 +321,24 @@ var tokenizeRuby = (function() {
 			  return {content:source.get(), style:GLOBALVARCLASS};
 			}
 
-			if (ch == '\'' && source.peek() != ' ') {
-			  pushState(inStaticString(STRINGCLASS, '\''), setState); 
+			if (ch == '\'') {
+			  setState(inStaticString(STRINGCLASS, '\'')); 
 			  return null;
 			}
 
 			if (ch == '`') {
-			  pushState(inRubyInsertableString(EXECCLASS, '`'), setState); 
+			  setState(inRubyInsertableString(EXECCLASS, '`')); 
 			  return null;
 			}
 
 
-			if (ch == '/' ) {
-			  pushState(inStaticString(REGEXPCLASS, '/'), setState); 
+			if (ch == '/' && source.peek() != ' ') {
+			  setState(inStaticString(REGEXPCLASS, '/')); 
 			  return null;
 			}
 
 			if (ch == '\"') {
-				pushState(inRubyInsertableString(STRINGCLASS, "\""), setState);
+				setState(inRubyInsertableString(STRINGCLASS, "\""));
 				return null;
 			}
 
