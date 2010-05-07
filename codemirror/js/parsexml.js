@@ -42,10 +42,10 @@ var XMLParser = Editor.Parser = (function() {
             return "xml-text";
           }
         }
-        else if (source.equals("?")) {
+        else if (source.equals("%")) {
           source.next();
           source.nextWhileMatches(/[\w\._\-]/);
-          setState(inBlock("xml-processing", "?>"));
+          setState(inBlock("xml-processing", "%>"));
           return "xml-processing";
         }
         else {
